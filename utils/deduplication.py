@@ -24,13 +24,11 @@ def _normalise(name: str) -> str:
     # Collapse whitespace
     text = re.sub(r"\s+", " ", text).strip()
 
-    # Strip trailing generic tokens
-    stopwords = {
-        "restaurant", "cafe", "bar", "grill", "kitchen", "house",
-        "eatery", "bistro", "ramen", "sushi", "curry", "bbq", "hotpot",
-    }
+    # Strip trailing generic tokens only
+    stopwords = {"restaurant", "cafe", "bar", "grill", "kitchen", "house", "eatery", "bistro"}
     tokens = text.split()
-    tokens = [t for t in tokens if t not in stopwords]
+    while tokens and tokens[-1] in stopwords:
+        tokens.pop()
 
     return " ".join(tokens)
 

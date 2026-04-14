@@ -12,8 +12,8 @@ from typing import Optional
 # ── Constants ──────────────────────────────────────────────────────────────────
 
 EARTH_RADIUS_KM = 6371.0
-MAX_DISTANCE_KM = 2.0          # return "Unknown" if farther than this
-MRT_DATA_PATH   = os.path.join(os.path.dirname(__file__), "..", "data", "mrt_stations.json")
+MAX_DISTANCE_KM = 3.0          # return "Unknown" if farther than this
+MRT_DATA_PATH   = os.path.join(os.path.dirname(__file__), "..", "mrt_stations.json")
 
 # ── Haversine formula ──────────────────────────────────────────────────────────
 
