@@ -1,16 +1,32 @@
-# Node
+# Dependency directories
 node_modules/
+/build
+/out
+
+# Next.js build output
 .next/
-out/
-build/
+debug.log
+*.log
 
-# Python
-__pycache__/
-*.pyc
-venv/
-.venv/
-env/
-
-# Environment Variables (CRITICAL)
+# Personal/Sensitive info
 .env
 .env.local
+.env.*.local
+
+# OS level
+.DS_Store
+
+# Python env and cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.venv/
+venv/
+env/
+.pytest_cache/
+.python-version
+
+# IDEs
+.vscode/
+.idea/
