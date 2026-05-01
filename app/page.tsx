@@ -394,20 +394,24 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
     setError(null);
   };
 
-  async function handleGenerate() {
-    if (!input.trim()) return;
+  async function handleGenerate(textOverride?: string) {
+    const textToProcess = textOverride || input;
+    if (!textToProcess.trim()) return;
+
     setLoading(true);
     setError(null);
     setResults(null);
-    setLoadingStep(isUrl ? "Fetching TikTok..." : "Parsing text...");
+
+    const isShared = isTikTokUrl(textToProcess);
+    setLoadingStep(isShared ? "Fetching TikTok..." : "Parsing text...");
 
     const controller = new AbortController();
-    const timeoutMs = isUrl ? 120_000 : 45_000;
+    const timeoutMs = isShared ? 120_000 : 45_000;
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
     try {
       const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
-      if (isUrl) setLoadingStep("Vision AI processing slides...");
+      if (isShared) setLoadingStep("Vision AI processing slides...");
 
       const res = await fetch(`${apiUrl}/generate`, {
         method: "POST",
@@ -415,7 +419,7 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
           "Content-Type": "application/json",
           "Authorization": `Bearer ${session.access_token}`,
         },
-        body: JSON.stringify({ text: input }),
+        body: JSON.stringify({ text: textToProcess }),
         signal: controller.signal,
       });
 
@@ -453,19 +457,8 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
         setInput(sharedUrl);
         // Clear param so it doesn't re-trigger on refresh
         window.history.replaceState({}, "", window.location.pathname);
-        // We wait for the state to settle, then trigger
-        setTimeout(() => {
-          // We need a way to trigger handleGenerate. 
-          // Since it's defined inside the component, we can just call it.
-          // However, we need to ensure the input state has updated.
-          // To be safe, we can pass the URL directly if we refactor handleGenerate 
-          // or just rely on the fact that handleGenerate uses the latest 'input' 
-          // if we trigger it slightly after.
-          const button = document.querySelector('button.btn-primary') as HTMLButtonElement;
-          if (button && !button.disabled) {
-            button.click();
-          }
-        }, 100);
+        // Immediately trigger processing using the override
+        handleGenerate(sharedUrl);
       }
     }
   }, []);
@@ -624,7 +617,7 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
                 )}
               </div>
               <button
-                onClick={handleGenerate}
+                onClick={() => handleGenerate()}
                 disabled={loading || !input.trim()}
                 className={`btn btn-primary sm:w-32 sm:h-auto h-12 ${loading ? 'btn-loading' : ''}`}
               >
