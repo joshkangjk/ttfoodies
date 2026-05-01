@@ -57,7 +57,7 @@ app = FastAPI(title="TikTok Food Discovery API", version="1.0.0")
 
 ALLOWED_ORIGINS = os.getenv(
     "ALLOWED_ORIGINS",
-    "http://localhost:3000"        # default for local dev; override in production env
+    "http://localhost:3000,https://ttfoodies.vercel.app"        # default for local dev; override in production env
 ).split(",")
 
 app.add_middleware(
