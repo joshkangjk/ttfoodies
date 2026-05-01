@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Search, Loader2, MapPin, Utensils, Train, AlertCircle, Link, FileText, Star, DollarSign, BookmarkPlus, Bookmark, LogOut, ArrowRight, ExternalLink, X } from "lucide-react";
+import { Search, Loader2, MapPin, Utensils, Train, AlertCircle, Link, FileText, Star, DollarSign, BookmarkPlus, Bookmark, LogOut, ArrowRight, ExternalLink, X, Trash2, RotateCcw, Check, Sparkles } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import Auth from "../components/Auth";
 import type { Session } from "@supabase/supabase-js";
@@ -103,13 +103,17 @@ function PriceIndicator({ level }: { level?: number }) {
 function ResultsTable({
   results,
   onSave,
+  onDelete,
   savedIds = new Set(),
-  isSavedTab = false
+  isSavedTab = false,
+  headerActions
 }: {
   results: PlaceResult[],
   onSave?: (r: PlaceResult) => void,
+  onDelete?: (r: PlaceResult) => void,
   savedIds?: Set<string>,
-  isSavedTab?: boolean
+  isSavedTab?: boolean,
+  headerActions?: React.ReactNode
 }) {
   const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(null);
 
@@ -147,8 +151,11 @@ function ResultsTable({
       <div className="mt-12 w-full">
         <div className="animate-fade-up">
           <div className="flex items-center justify-between mb-6 px-2">
-            <span className="data-label">{results.length} spot{results.length !== 1 ? 's' : ''} detected</span>
-            {!isSavedTab && <div className="accent-rule" />}
+            <div className="flex items-center gap-4">
+              <span className="data-label">{results.length} spot{results.length !== 1 ? 's' : ''} detected</span>
+              {!isSavedTab && <div className="accent-rule" />}
+            </div>
+            {headerActions}
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -285,7 +292,15 @@ function ResultsTable({
                   Navigation
                 </button>
 
-                {!isSavedTab && (
+                {isSavedTab ? (
+                  <button
+                    onClick={() => { onDelete?.(r); setSelectedPlace(null); }}
+                    className="btn btn-ghost text-error flex-1 hover:bg-error/5"
+                  >
+                    <Trash2 className="h-4 w-4 mr-2" />
+                    Remove
+                  </button>
+                ) : (
                   <button
                     onClick={() => { if (!saved) onSave?.(r); }}
                     disabled={!!saved}
@@ -340,6 +355,8 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
   const [loadingStep, setLoadingStep] = useState("");
   const [results, setResults] = useState<PlaceResult[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
+  const [selectedCuisine, setSelectedCuisine] = useState<string>("All");
 
   const isUrl = useMemo(() => isTikTokUrl(input), [input]);
 
@@ -347,6 +364,35 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
     () => new Set((savedPlaces ?? []).map(p => p.place_id).filter(Boolean) as string[]),
     [savedPlaces]
   );
+
+  const cuisineList = useMemo(() => {
+    if (!savedPlaces) return ["All"];
+    const cuisines = Array.from(new Set(savedPlaces.map(p => p.cuisine)));
+    return ["All", ...cuisines.sort()];
+  }, [savedPlaces]);
+
+  const filteredSavedPlaces = useMemo(() => {
+    if (!savedPlaces) return null;
+    if (selectedCuisine === "All") return savedPlaces;
+    return savedPlaces.filter(p => p.cuisine === selectedCuisine);
+  }, [savedPlaces, selectedCuisine]);
+
+  useEffect(() => {
+    if (toastMessage) {
+      const timer = setTimeout(() => setToastMessage(null), 3000);
+      return () => clearTimeout(timer);
+    }
+  }, [toastMessage]);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+  };
+
+  const clearFeed = () => {
+    setResults(null);
+    setInput("");
+    setError(null);
+  };
 
   async function handleGenerate() {
     if (!input.trim()) return;
@@ -450,6 +496,54 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
 
     if (!error) {
       setSavedPlaces(prev => [...(prev ?? []), { ...r }]);
+      showToast(`✓ ${r.name} saved to Library`);
+    }
+  }
+
+  const handleSaveAll = async () => {
+    if (!results) return;
+    const unsaved = results.filter(r => r.verified && r.place_id && !savedIds.has(r.place_id));
+    if (unsaved.length === 0) return;
+
+    setLoading(true);
+    setLoadingStep(`Archiving ${unsaved.length} spots...`);
+
+    let successCount = 0;
+    for (const r of unsaved) {
+      const { error } = await supabase.from('saved_places').insert({
+        user_id: session.user.id,
+        name: r.name,
+        address: r.address,
+        place_id: r.place_id,
+        cuisine: r.cuisine,
+        lat: r.lat,
+        lng: r.lng,
+        rating: r.rating,
+        user_ratings_total: r.user_ratings_total,
+        price_level: r.price_level,
+        nearest_mrt: r.nearest_mrt,
+        tiktok_url: input,
+      });
+      if (!error) successCount++;
+    }
+
+    await fetchSavedPlaces();
+    setLoading(false);
+    setLoadingStep("");
+    showToast(`✓ Bulk saved ${successCount} discoveries`);
+  }
+
+  const handleDeletePlace = async (r: PlaceResult) => {
+    if (!r.place_id) return;
+    const { error } = await supabase
+      .from('saved_places')
+      .delete()
+      .eq('place_id', r.place_id)
+      .eq('user_id', session.user.id);
+
+    if (!error) {
+      setSavedPlaces(prev => prev ? prev.filter(p => p.place_id !== r.place_id) : null);
+      showToast(`Removed ${r.name}`);
     }
   }
 
@@ -518,17 +612,23 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
             <div className="flex">
               <button
                 onClick={() => setActiveTab("discover")}
-                className={`px-6 py-3 font-display font-bold text-sm tracking-tight transition-all border-b-4 ${activeTab === "discover" ? "border-chili text-ink" : "border-transparent text-ink-400 hover:text-ink-600"
+                className={`flex items-center px-6 py-3 font-display font-bold text-sm tracking-tight transition-all border-b-4 ${activeTab === "discover" ? "border-chili text-ink active" : "border-transparent text-ink-400 hover:text-ink-600"
                   }`}
               >
                 Inbound Feed
+                {results && results.length > 0 && (
+                  <span className="count-pip">{results.length}</span>
+                )}
               </button>
               <button
                 onClick={() => setActiveTab("saved")}
-                className={`px-6 py-3 font-display font-bold text-sm tracking-tight transition-all border-b-4 ${activeTab === "saved" ? "border-chili text-ink" : "border-transparent text-ink-400 hover:text-ink-600"
+                className={`flex items-center px-6 py-3 font-display font-bold text-sm tracking-tight transition-all border-b-4 ${activeTab === "saved" ? "border-chili text-ink active" : "border-transparent text-ink-400 hover:text-ink-600"
                   }`}
               >
                 Saved Library
+                {savedPlaces && savedPlaces.length > 0 && (
+                  <span className="count-pip">{savedPlaces.length}</span>
+                )}
               </button>
             </div>
 
@@ -564,11 +664,51 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
                     </div>
                   </div>
                 )}
+                {!loading && results === null && (
+                  <div className="mt-12 animate-fade-up">
+                    <div className="onboarding-card">
+                      <Sparkles className="h-8 w-8 text-chili mx-auto mb-4 opacity-50" />
+                      <h3 className="font-display text-xl mb-6">Discover Singapore's hidden gems</h3>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-8 text-left">
+                        <div className="space-y-2">
+                          <span className="badge badge-ink">Step 1</span>
+                          <p className="text-sm font-medium">Find a viral food TikTok or transcript</p>
+                        </div>
+                        <div className="space-y-2">
+                          <span className="badge badge-ink">Step 2</span>
+                          <p className="text-sm font-medium">Paste the link and hit <span className="text-chili">Discover</span></p>
+                        </div>
+                        <div className="space-y-2">
+                          <span className="badge badge-ink">Step 3</span>
+                          <p className="text-sm font-medium">Save verified spots to your Library</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
                 {!loading && results !== null && (
                   <ResultsTable
                     results={results}
                     onSave={handleSavePlace}
                     savedIds={savedIds}
+                    headerActions={
+                      <div className="flex gap-2">
+                        {results.length > 0 && (
+                          <button
+                            onClick={handleSaveAll}
+                            disabled={!results.some(r => r.verified && r.place_id && !savedIds.has(r.place_id))}
+                            className="btn btn-secondary btn-sm"
+                          >
+                            <BookmarkPlus className="h-3.5 w-3.5 mr-2" />
+                            Save All
+                          </button>
+                        )}
+                        <button onClick={clearFeed} className="btn btn-ghost btn-sm">
+                          <RotateCcw className="h-3.5 w-3.5 mr-2" />
+                          Clear
+                        </button>
+                      </div>
+                    }
                   />
                 )}
               </>
@@ -588,13 +728,45 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
                     <p className="empty-state__body">You haven't archived any spots yet. Discover them from your feed first.</p>
                   </div>
                 ) : (
-                  <ResultsTable results={savedPlaces} isSavedTab={true} />
+                  <div className="mt-8 space-y-8">
+                    <div className="filter-scroll">
+                      {cuisineList.map(c => (
+                        <button
+                          key={c}
+                          onClick={() => setSelectedCuisine(c)}
+                          className={`cuisine-pill whitespace-nowrap ${selectedCuisine === c ? 'cuisine-pill--active' : ''}`}
+                        >
+                          {c}
+                          {savedPlaces.filter(p => p.cuisine === c || c === "All").length > 0 && (
+                             <span className="ml-1.5 opacity-60 text-[10px]">
+                               {c === "All" ? savedPlaces.length : savedPlaces.filter(p => p.cuisine === c).length}
+                             </span>
+                          )}
+                        </button>
+                      ))}
+                    </div>
+                    <ResultsTable
+                      results={filteredSavedPlaces || []}
+                      isSavedTab={true}
+                      onDelete={handleDeletePlace}
+                    />
+                  </div>
                 )}
               </div>
             )}
           </div>
         </div>
       </main>
+
+      {/* Floating Toast */}
+      {toastMessage && (
+        <div className="toast-float animate-fade-up">
+          <div className="toast toast--success shadow-crisp">
+            <Check className="h-4 w-4 mt-0.5" />
+            <span className="font-bold">{toastMessage}</span>
+          </div>
+        </div>
+      )}
 
       {/* Footer */}
       <footer className="mt-auto border-t border-ink-200 py-12">

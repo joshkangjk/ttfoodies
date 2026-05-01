@@ -25,7 +25,7 @@ CUISINE_MAP: dict[str, str] = {
     "japanese_restaurant":          "Japanese",
     "sushi_restaurant":             "Japanese",
     "ramen_restaurant":             "Japanese",
-    "ramen_noodle_shop":            "Japanese",   # alt label seen in v1
+    "ramen_noodle_shop":            "Japanese",
     "yakitori_restaurant":          "Japanese",
     "teppanyaki_restaurant":        "Japanese",
     "tonkatsu_restaurant":          "Japanese",
@@ -45,114 +45,159 @@ CUISINE_MAP: dict[str, str] = {
     "cantonese_restaurant":         "Chinese",
     "wonton_restaurant":            "Chinese",
     "hot_pot_restaurant":           "Chinese",
-    "hotpot_restaurant":            "Chinese",   # alt spelling
+    "hotpot_restaurant":            "Chinese",
     "szechuan_restaurant":          "Chinese",
-    "sichuan_restaurant":           "Chinese",   # alt spelling
-    "taiwanese_restaurant":         "Chinese",
+    "sichuan_restaurant":           "Chinese",
     "congee_restaurant":            "Chinese",
     "roast_meat_restaurant":        "Chinese",
     "bak_kut_teh_restaurant":       "Chinese",
-    "seafood_restaurant":           "Chinese",   # Cantonese-style seafood dominates in SG
+    "seafood_restaurant":           "Chinese",
 
-    # ── Western ─────────────────────────────────────────────────────────────
-    "american_restaurant":          "Western",
-    "italian_restaurant":           "Western",
-    "french_restaurant":            "Western",
-    "steak_house":                  "Western",
-    "steakhouse":                   "Western",   # alt spelling
-    "hamburger_restaurant":         "Western",
-    "burger_restaurant":            "Western",
-    "pizza_restaurant":             "Western",
-    "pizzeria":                     "Western",
-    "mexican_restaurant":           "Western",
-    "tex_mex_restaurant":           "Western",
-    "greek_restaurant":             "Western",
-    "mediterranean_restaurant":     "Western",
-    "spanish_restaurant":           "Western",
-    "tapas_bar":                    "Western",
-    "portuguese_restaurant":        "Western",
-    "brazilian_restaurant":         "Western",
-    "barbecue_restaurant":          "Western",
-    "brunch_restaurant":            "Western",
-    "breakfast_restaurant":         "Western",
-    "sandwich_shop":                "Western",
-    "sandwiches_restaurant":        "Western",
-    "deli":                         "Western",
-    "pub":                          "Western",
-    "gastropub":                    "Western",
+    # ── Taiwanese ───────────────────────────────────────────────────────────
+    "taiwanese_restaurant":         "Taiwanese",
+
+    # ── Italian ─────────────────────────────────────────────────────────────
+    "italian_restaurant":           "Italian",
+    "pizza_restaurant":             "Italian",
+    "pizzeria":                     "Italian",
+
+    # ── French ──────────────────────────────────────────────────────────────
+    "french_restaurant":            "French",
+
+    # ── Mexican ─────────────────────────────────────────────────────────────
+    "mexican_restaurant":           "Mexican",
+    "tex_mex_restaurant":           "Mexican",
+
+    # ── Spanish ─────────────────────────────────────────────────────────────
+    "spanish_restaurant":           "Spanish",
+    "tapas_bar":                    "Spanish",
+
+    # ── Mediterranean ───────────────────────────────────────────────────────
+    "greek_restaurant":             "Mediterranean",
+    "mediterranean_restaurant":     "Mediterranean",
+
+    # ── American ────────────────────────────────────────────────────────────
+    "american_restaurant":          "American",
+    "hamburger_restaurant":         "American",
+    "burger_restaurant":            "American",
+    "steak_house":                  "American",
+    "steakhouse":                   "American",
+    "barbecue_restaurant":          "American",
+
+    # ── Brunch ──────────────────────────────────────────────────────────────
+    "brunch_restaurant":            "Brunch",
+    "breakfast_restaurant":         "Brunch",
+
+    # ── Western (Catch-all for European) ────────────────────────────────────
     "british_restaurant":           "Western",
     "german_restaurant":            "Western",
     "austrian_restaurant":          "Western",
     "swiss_restaurant":             "Western",
     "russian_restaurant":           "Western",
+    "portuguese_restaurant":        "Western",
+    "brazilian_restaurant":         "Western",
+    "sandwich_shop":                "Western",
+    "sandwiches_restaurant":        "Western",
+    "deli":                         "Western",
+    "pub":                          "Western",
+    "gastropub":                    "Western",
 
-    # ── Cafe / Dessert ───────────────────────────────────────────────────────
-    "cafe":                         "Cafe / Dessert",
-    "coffee_shop":                  "Cafe / Dessert",
-    "dessert_shop":                 "Cafe / Dessert",
-    "dessert_restaurant":           "Cafe / Dessert",
-    "bakery":                       "Cafe / Dessert",
-    "patisserie":                   "Cafe / Dessert",
-    "ice_cream_shop":               "Cafe / Dessert",
-    "donut_shop":                   "Cafe / Dessert",
-    "juice_bar":                    "Cafe / Dessert",
-    "smoothie_bar":                 "Cafe / Dessert",
-    "tea_house":                    "Cafe / Dessert",   # bubble tea / afternoon tea
-    "bubble_tea_shop":              "Cafe / Dessert",
-    "boba_tea_restaurant":          "Cafe / Dessert",
-    "acai_shop":                    "Cafe / Dessert",
-    "waffle_shop":                  "Cafe / Dessert",
-    "crepe_restaurant":             "Cafe / Dessert",
-    "chocolate_shop":               "Cafe / Dessert",
-    "confectionery":                "Cafe / Dessert",
+    # ── Cafe / Dessert ──────────────────────────────────────────────────────
+    "cafe":                         "Cafe",
+    "coffee_shop":                  "Cafe",
+    "tea_house":                    "Cafe",
+    "bubble_tea_shop":              "Cafe",
+    "boba_tea_restaurant":          "Cafe",
+    "juice_bar":                    "Cafe",
+    "smoothie_bar":                 "Cafe",
 
-    # ── Local Hawker (Singapore-centric) ─────────────────────────────────────
+    # ── Dessert ─────────────────────────────────────────────────────────────
+    "dessert_shop":                 "Dessert",
+    "dessert_restaurant":           "Dessert",
+    "bakery":                       "Dessert",
+    "patisserie":                   "Dessert",
+    "ice_cream_shop":               "Dessert",
+    "donut_shop":                   "Dessert",
+    "acai_shop":                    "Dessert",
+    "waffle_shop":                  "Dessert",
+    "crepe_restaurant":             "Dessert",
+    "chocolate_shop":               "Dessert",
+    "confectionery":                "Dessert",
+
+    # ── Malay ───────────────────────────────────────────────────────────────
+    "malaysian_restaurant":         "Malay",
+    "singaporean_restaurant":       "Malay",
+
+    # ── Indonesian ──────────────────────────────────────────────────────────
+    "indonesian_restaurant":        "Indonesian",
+    "nasi_padang_restaurant":       "Indonesian",
+
+    # ── Peranakan ───────────────────────────────────────────────────────────
+    # (No dedicated Google type — resolved via Tier 2/3 AI inference)
+
+    # ── Local Hawker (Format-based) ─────────────────────────────────────────
     "hawker_centre":                "Local Hawker",
     "food_court":                   "Local Hawker",
-    "meal_takeaway":                "Local Hawker",
-    "singaporean_restaurant":       "Local Hawker",
-    "malaysian_restaurant":         "Local Hawker",
-    "indonesian_restaurant":        "Local Hawker",   # nasi padang, etc.
-    "nasi_padang_restaurant":       "Local Hawker",
     "kopitiam":                     "Local Hawker",
+    "meal_takeaway":                "Local Hawker",
     "chicken_rice_restaurant":      "Local Hawker",
     "laksa_restaurant":             "Local Hawker",
     "satay_restaurant":             "Local Hawker",
 
-    # ── Other (explicitly mapped so AI fallback is rarely needed) ────────────
-    "indian_restaurant":            "Other",
-    "south_indian_restaurant":      "Other",
-    "north_indian_restaurant":      "Other",
-    "pakistani_restaurant":         "Other",
-    "bangladeshi_restaurant":       "Other",
-    "thai_restaurant":              "Other",
-    "vietnamese_restaurant":        "Other",
-    "pho_restaurant":               "Other",
-    "filipino_restaurant":          "Other",
-    "burmese_restaurant":           "Other",
-    "cambodian_restaurant":         "Other",
-    "laotian_restaurant":           "Other",
-    "middle_eastern_restaurant":    "Other",
-    "lebanese_restaurant":          "Other",
-    "turkish_restaurant":           "Other",
-    "arabic_restaurant":            "Other",
-    "persian_restaurant":           "Other",
-    "afghani_restaurant":           "Other",
-    "african_restaurant":           "Other",
-    "ethiopian_restaurant":         "Other",
+    # ── Indian ──────────────────────────────────────────────────────────────
+    "indian_restaurant":            "Indian",
+    "south_indian_restaurant":      "Indian",
+    "north_indian_restaurant":      "Indian",
+
+    # ── Pakistani ───────────────────────────────────────────────────────────
+    "pakistani_restaurant":         "Pakistani",
+    "bangladeshi_restaurant":       "Pakistani",
+
+    # ── Thai ────────────────────────────────────────────────────────────────
+    "thai_restaurant":              "Thai",
+
+    # ── Vietnamese ──────────────────────────────────────────────────────────
+    "vietnamese_restaurant":        "Vietnamese",
+    "pho_restaurant":               "Vietnamese",
+
+    # ── Filipino ────────────────────────────────────────────────────────────
+    "filipino_restaurant":          "Filipino",
+
+    # ── Burmese ─────────────────────────────────────────────────────────────
+    "burmese_restaurant":           "Burmese",
+    "cambodian_restaurant":         "Burmese",  # SE Asian grouping
+    "laotian_restaurant":           "Burmese",
+
+    # ── Middle Eastern ──────────────────────────────────────────────────────
+    "middle_eastern_restaurant":    "Middle Eastern",
+    "lebanese_restaurant":          "Middle Eastern",
+    "turkish_restaurant":           "Middle Eastern",
+    "arabic_restaurant":            "Middle Eastern",
+    "persian_restaurant":           "Middle Eastern",
+    "afghani_restaurant":           "Middle Eastern",
+
+    # ── African ─────────────────────────────────────────────────────────────
+    "african_restaurant":           "African",
+    "ethiopian_restaurant":         "African",
+
+    # ── Fusion ──────────────────────────────────────────────────────────────
+    "fusion_restaurant":            "Fusion",
+    "international_restaurant":     "Fusion",
+
+    # ── Bar & Drinks ────────────────────────────────────────────────────────
+    "bar":                          "Bar & Drinks",
+    "night_club":                   "Bar & Drinks",
+
+    # ── Other (Catch-all) ───────────────────────────────────────────────────
     "hawaiian_restaurant":          "Other",
     "poke_restaurant":              "Other",
     "vegetarian_restaurant":        "Other",
     "vegan_restaurant":             "Other",
     "health_food_restaurant":       "Other",
     "organic_restaurant":           "Other",
-    "fusion_restaurant":            "Other",
-    "international_restaurant":     "Other",
     "buffet_restaurant":            "Other",
     "fast_food_restaurant":         "Other",
     "food_stand":                   "Other",
-    "bar":                          "Other",
-    "night_club":                   "Other",
 }
 
 DEFAULT_CUISINE = "Other"
@@ -162,7 +207,22 @@ SINGAPORE_LAT = 1.3521
 SINGAPORE_LNG = 103.8198
 
 
-VALID_CATEGORIES = ["Japanese", "Korean", "Western", "Local Hawker", "Cafe / Dessert", "Chinese"]
+VALID_CATEGORIES = [
+    # East Asian
+    "Japanese", "Korean", "Chinese", "Taiwanese",
+    # Southeast Asian
+    "Malay", "Indonesian", "Peranakan", "Thai", "Vietnamese", "Filipino", "Burmese",
+    # South Asian
+    "Indian", "Pakistani",
+    # Western (granular)
+    "Italian", "French", "Mexican", "Spanish", "Mediterranean", "American", "Brunch", "Western",
+    # Middle Eastern & African
+    "Middle Eastern", "African",
+    # Lifestyle
+    "Cafe", "Dessert", "Bar & Drinks", "Fusion",
+    # Singapore-specific
+    "Local Hawker",
+]
 
 
 def _map_cuisine(types: list[str]) -> str:
@@ -259,20 +319,34 @@ async def infer_cuisine_from_name(
         if context_lines else ""
     )
 
-    prompt = f"""You are classifying a Singapore food establishment by cuisine type.
+    prompt = f"""You are classifying a Singapore food establishment by its SPECIFIC cuisine type.
 
 Place name : {place_name}
 Address    : {address}{context_block}
 
-Using the name, address, and any context above, choose ONE category:
-  Japanese | Korean | Chinese | Western | Local Hawker | Cafe / Dessert | Other
+Using the name, address, and any context above, choose ONE category from this list:
+  Japanese | Korean | Chinese | Taiwanese |
+  Malay | Indonesian | Peranakan | Thai | Vietnamese | Filipino | Burmese |
+  Indian | Pakistani |
+  Italian | French | Mexican | Spanish | Mediterranean | American | Brunch | Western |
+  Middle Eastern | African |
+  Cafe | Dessert | Bar & Drinks | Fusion |
+  Local Hawker | Other
 
 Guidelines:
-- "Local Hawker" = Singaporean / Malaysian / Indonesian street food and kopitiams.
-- "Other" covers Vietnamese, Thai, Indian, Filipino, Middle Eastern, and anything that
-  does not clearly fit the above six.
-- Brand names are strong signals (e.g. "So Pho" → Other/Vietnamese, "Haidilao" → Chinese,
-  "Nando's" → Western, "Old Chang Kee" → Local Hawker).
+- Be as SPECIFIC as possible. Prefer "Italian" over "Western", "Malay" over "Local Hawker".
+- "Local Hawker" = ONLY for hawker centres, food courts, and kopitiams (the dining format, not the cuisine).
+- "Malay" = Malay or Singaporean cuisine (nasi lemak, rendang) at ANY price point including fine dining.
+- "Indonesian" = Indonesian cuisine (nasi padang, gudeg, soto ayam).
+- "Peranakan" = Nyonya / Straits Chinese cuisine (laksa, ayam buah keluak, kueh).
+- "Cafe" = Coffee shops, tea houses, bubble tea.
+- "Dessert" = Bakeries, patisseries, ice cream, dedicated dessert spots.
+- "Brunch" = Brunch-focused or breakfast-focused restaurants.
+- "American" = Burgers, steaks, BBQ, American-style diners.
+- "Western" = General European cuisines not covered by Italian/French/Spanish/Mediterranean.
+- "Fusion" = Explicitly cross-cuisine or "modern international" concepts.
+- Brand signals: "So Pho" → Vietnamese, "Haidilao" → Chinese, "Nando's" → Western,
+  "Old Chang Kee" → Local Hawker, "The Coconut Club" → Malay, "National Kitchen by Violet Oon" → Peranakan.
 - If genuinely ambiguous, return "Other".
 
 Return ONLY the category name — no explanation, no punctuation."""
@@ -400,14 +474,22 @@ async def infer_cuisine_from_text(place_name: str, transcript: str) -> str:
     Returns:
         A valid category string, or "Other" if Gemini is uncertain.
     """
-    prompt = f"""You are classifying a Singapore food establishment by cuisine type.
+    prompt = f"""You are classifying a Singapore food establishment by its SPECIFIC cuisine type.
 
 Based on this TikTok transcript: "{transcript}"
 What is the cuisine of the place "{place_name}"?
 
-Categories: Japanese | Korean | Western | Local Hawker | Cafe / Dessert | Chinese | Other
+Categories:
+  Japanese | Korean | Chinese | Taiwanese |
+  Malay | Indonesian | Peranakan | Thai | Vietnamese | Filipino | Burmese |
+  Indian | Pakistani |
+  Italian | French | Mexican | Spanish | Mediterranean | American | Brunch | Western |
+  Middle Eastern | African |
+  Cafe | Dessert | Bar & Drinks | Fusion |
+  Local Hawker | Other
 
-Return ONLY the category name. If you cannot tell, return "Other"."""
+Be as SPECIFIC as possible. Return ONLY the category name. If you cannot tell, return "Other"."""
+
 
     try:
         response = gemini_client.models.generate_content(
