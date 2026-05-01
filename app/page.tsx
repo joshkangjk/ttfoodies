@@ -448,47 +448,58 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
     }
   }
 
-  // ── Handle Shared URL (Phase 2) ───────────────────────────────────────────
+  // ── Handle Shared URL (Phase 2 — Server-Side Bridge) ───────────────────────
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const checkSharedUrl = () => {
-        // Try query params first (?url=)
-        const params = new URLSearchParams(window.location.search);
-        let sharedUrl = params.get("url");
-        
-        // If not found, try hash params (#url=)
-        if (!sharedUrl && window.location.hash) {
-          const hashParams = new URLSearchParams(window.location.hash.substring(1));
-          sharedUrl = hashParams.get("url");
+    if (typeof window === "undefined") return;
+
+    const checkSharedUrl = async () => {
+      // 1. Still check URL params (works when opened via https://)
+      const params = new URLSearchParams(window.location.search);
+      let sharedUrl = params.get("url");
+      if (!sharedUrl && window.location.hash) {
+        const hashParams = new URLSearchParams(window.location.hash.substring(1));
+        sharedUrl = hashParams.get("url");
+      }
+
+      if (sharedUrl && isTikTokUrl(sharedUrl)) {
+        setInput(sharedUrl);
+        window.history.replaceState({}, "", window.location.pathname);
+        handleGenerate(sharedUrl);
+        return;
+      }
+
+      // 2. Poll the server-side share inbox (works when opened via webapp://)
+      if (session?.user?.id) {
+        try {
+          const res = await fetch(`/api/share?user_id=${session.user.id}`);
+          const data = await res.json();
+          if (data.url && isTikTokUrl(data.url)) {
+            setInput(data.url);
+            handleGenerate(data.url);
+          }
+        } catch (e) {
+          // Silently fail — not critical
         }
-        
-        if (sharedUrl && isTikTokUrl(sharedUrl)) {
-          setInput(sharedUrl);
-          // Clear param so it doesn't re-trigger
-          window.history.replaceState({}, "", window.location.pathname);
-          // Trigger processing
-          handleGenerate(sharedUrl);
-        }
-      };
+      }
+    };
 
-      // 1. Check on initial mount
-      checkSharedUrl();
+    // Check on mount
+    checkSharedUrl();
 
-      // 2. Check whenever the app comes to the foreground (PWA focus)
-      const handleVisibilityChange = () => {
-        if (document.visibilityState === "visible") {
-          checkSharedUrl();
-        }
-      };
+    // Check whenever the app comes to the foreground
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        checkSharedUrl();
+      }
+    };
 
-      window.addEventListener("visibilitychange", handleVisibilityChange);
-      window.addEventListener("focus", checkSharedUrl);
+    window.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", checkSharedUrl);
 
-      return () => {
-        window.removeEventListener("visibilitychange", handleVisibilityChange);
-        window.removeEventListener("focus", checkSharedUrl);
-      };
-    }
+    return () => {
+      window.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", checkSharedUrl);
+    };
   }, [session]);
 
   const fetchSavedPlaces = async () => {
