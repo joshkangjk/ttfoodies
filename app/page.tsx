@@ -63,7 +63,7 @@ function MRTBadge({ station }: { station: string }) {
 
   // Extract line prefix (e.g., "DT" from "DT18")
   const prefix = station.match(/^[A-Z]+/)?.[0]?.toUpperCase() || "";
-  
+
   const lineClass = {
     'NS': 'mrt--nsl',
     'EW': 'mrt--ewl',
@@ -210,7 +210,7 @@ function ResultsTable({
                 >
                   <X className="h-5 w-5" />
                 </button>
-                
+
                 <div className="flex items-center gap-3 mb-2">
                   <h2 className="font-display font-bold text-2xl leading-tight text-paper uppercase tracking-tight">
                     {r.name}
@@ -451,17 +451,45 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
   // ── Handle Shared URL (Phase 2) ───────────────────────────────────────────
   useEffect(() => {
     if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      const sharedUrl = params.get("url");
-      if (sharedUrl && isTikTokUrl(sharedUrl)) {
-        setInput(sharedUrl);
-        // Clear param so it doesn't re-trigger on refresh
-        window.history.replaceState({}, "", window.location.pathname);
-        // Immediately trigger processing using the override
-        handleGenerate(sharedUrl);
-      }
+      const checkSharedUrl = () => {
+        // Try query params first (?url=)
+        const params = new URLSearchParams(window.location.search);
+        let sharedUrl = params.get("url");
+        
+        // If not found, try hash params (#url=)
+        if (!sharedUrl && window.location.hash) {
+          const hashParams = new URLSearchParams(window.location.hash.substring(1));
+          sharedUrl = hashParams.get("url");
+        }
+        
+        if (sharedUrl && isTikTokUrl(sharedUrl)) {
+          setInput(sharedUrl);
+          // Clear param so it doesn't re-trigger
+          window.history.replaceState({}, "", window.location.pathname);
+          // Trigger processing
+          handleGenerate(sharedUrl);
+        }
+      };
+
+      // 1. Check on initial mount
+      checkSharedUrl();
+
+      // 2. Check whenever the app comes to the foreground (PWA focus)
+      const handleVisibilityChange = () => {
+        if (document.visibilityState === "visible") {
+          checkSharedUrl();
+        }
+      };
+
+      window.addEventListener("visibilitychange", handleVisibilityChange);
+      window.addEventListener("focus", checkSharedUrl);
+
+      return () => {
+        window.removeEventListener("visibilitychange", handleVisibilityChange);
+        window.removeEventListener("focus", checkSharedUrl);
+      };
     }
-  }, []);
+  }, [session]);
 
   const fetchSavedPlaces = async () => {
     const { data, error } = await supabase
@@ -757,9 +785,9 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
                         >
                           {c}
                           {savedPlaces.filter(p => p.cuisine === c || c === "All").length > 0 && (
-                             <span className="ml-1.5 opacity-60 text-[10px]">
-                               {c === "All" ? savedPlaces.length : savedPlaces.filter(p => p.cuisine === c).length}
-                             </span>
+                            <span className="ml-1.5 opacity-60 text-[10px]">
+                              {c === "All" ? savedPlaces.length : savedPlaces.filter(p => p.cuisine === c).length}
+                            </span>
                           )}
                         </button>
                       ))}
