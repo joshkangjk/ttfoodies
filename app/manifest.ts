@@ -7,12 +7,17 @@ export default function manifest(): MetadataRoute.Manifest {
     description: 'Find the nearest MRT for trending TikTok food spots.',
     start_url: '/',
     display: 'standalone',
-    background_color: '#ffffff',
-    theme_color: '#10b981', // tailwind emerald-500
+    background_color: '#F7F3EC',
+    theme_color: '#C8471A',
     icons: [
       {
-        src: '/icon.png',
-        sizes: 'any',
+        src: '/icon-192.png',
+        sizes: '192x192',
+        type: 'image/png',
+      },
+      {
+        src: '/icon-512.png',
+        sizes: '512x512',
         type: 'image/png',
       },
     ],

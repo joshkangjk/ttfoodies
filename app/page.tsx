@@ -444,6 +444,32 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
     }
   }
 
+  // ── Handle Shared URL (Phase 2) ───────────────────────────────────────────
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const sharedUrl = params.get("url");
+      if (sharedUrl && isTikTokUrl(sharedUrl)) {
+        setInput(sharedUrl);
+        // Clear param so it doesn't re-trigger on refresh
+        window.history.replaceState({}, "", window.location.pathname);
+        // We wait for the state to settle, then trigger
+        setTimeout(() => {
+          // We need a way to trigger handleGenerate. 
+          // Since it's defined inside the component, we can just call it.
+          // However, we need to ensure the input state has updated.
+          // To be safe, we can pass the URL directly if we refactor handleGenerate 
+          // or just rely on the fact that handleGenerate uses the latest 'input' 
+          // if we trigger it slightly after.
+          const button = document.querySelector('button.btn-primary') as HTMLButtonElement;
+          if (button && !button.disabled) {
+            button.click();
+          }
+        }, 100);
+      }
+    }
+  }, []);
+
   const fetchSavedPlaces = async () => {
     const { data, error } = await supabase
       .from('saved_places')
