@@ -223,6 +223,13 @@
     box-shadow: 2px 2px 0 0 var(--ink);
   }
 
+  .modal-surface {
+    background: var(--surface);
+    border: 2px solid var(--ink);
+    border-radius: var(--radius-lg);
+    box-shadow: 6px 6px 0 0 var(--ink);
+  }
+
   .panel-accent {
     background: var(--chili-subtle);
     border: 1px solid var(--chili);
@@ -583,6 +590,15 @@
     opacity: 0.6;
     flex-shrink: 0;
   }
+
+  /* MRT Line Custom Colors */
+  .mrt--nsl { background: #E6001F; color: white; }
+  .mrt--ewl { background: #009645; color: white; }
+  .mrt--nel { background: #9900AA; color: white; }
+  .mrt--ccl { background: #FA9E0D; color: black; }
+  .mrt--dtl { background: #005EC4; color: white; }
+  .mrt--tel { background: #9D5B25; color: white; }
+  .mrt--lrt { background: #748477; color: white; }
 
   /* ── Data Table ─────────────────────────────────────────────────────────── */
 

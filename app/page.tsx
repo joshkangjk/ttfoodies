@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useMemo, useEffect } from "react";
-import { Search, Loader2, MapPin, Utensils, Train, AlertCircle, Link, FileText, Star, DollarSign, BookmarkPlus, Bookmark, LogOut, ArrowRight, ExternalLink } from "lucide-react";
+import { Search, Loader2, MapPin, Utensils, Train, AlertCircle, Link, FileText, Star, DollarSign, BookmarkPlus, Bookmark, LogOut, ArrowRight, ExternalLink, X } from "lucide-react";
 import { supabase } from "../lib/supabaseClient";
 import Auth from "../components/Auth";
 import type { Session } from "@supabase/supabase-js";
@@ -49,7 +49,6 @@ function getGoogleMapsUrl(r: PlaceResult) {
 // ── UI Components ─────────────────────────────────────────────────────────────
 
 function CuisineBadge({ cuisine }: { cuisine: string }) {
-  // Use semantic badge styles from globals.css
   const cls = cuisine === "Other" || cuisine === "Unknown" ? "badge-neutral" : "badge-accent";
   return (
     <span className={`badge ${cls}`}>
@@ -61,9 +60,25 @@ function CuisineBadge({ cuisine }: { cuisine: string }) {
 function MRTBadge({ station }: { station: string }) {
   const isUnknown = station === "Unknown";
   if (isUnknown) return <span className="badge badge-neutral italic opacity-50">Private Transport</span>;
+
+  // Extract line prefix (e.g., "DT" from "DT18")
+  const prefix = station.match(/^[A-Z]+/)?.[0]?.toUpperCase() || "";
   
+  const lineClass = {
+    'NS': 'mrt--nsl',
+    'EW': 'mrt--ewl',
+    'NE': 'mrt--nel',
+    'CC': 'mrt--ccl',
+    'DT': 'mrt--dtl',
+    'TE': 'mrt--tel',
+    'LRT': 'mrt--lrt',
+    'BP': 'mrt--lrt',
+    'STC': 'mrt--lrt',
+    'PTC': 'mrt--lrt',
+  }[prefix] || "";
+
   return (
-    <span className="mrt-badge">
+    <span className={`mrt-badge ${lineClass}`}>
       {station}
     </span>
   );
@@ -73,8 +88,8 @@ function PriceIndicator({ level }: { level?: number }) {
   return (
     <div className="price-dots">
       {[1, 2, 3, 4].map((i) => (
-        <div 
-          key={i} 
+        <div
+          key={i}
           className={`price-dots__dot ${level && i <= level ? 'price-dots__dot--filled' : ''}`}
           title={formatPricePax(level)}
         />
@@ -83,19 +98,38 @@ function PriceIndicator({ level }: { level?: number }) {
   );
 }
 
-// ── Results Table ─────────────────────────────────────────────────────────────
+// ── Results Table (Card Grid + Modal) ─────────────────────────────────────────
 
-function ResultsTable({ 
-  results, 
-  onSave, 
-  savedIds = new Set(), 
-  isSavedTab = false 
-}: { 
-  results: PlaceResult[], 
-  onSave?: (r: PlaceResult) => void, 
-  savedIds?: Set<string>, 
-  isSavedTab?: boolean 
+function ResultsTable({
+  results,
+  onSave,
+  savedIds = new Set(),
+  isSavedTab = false
+}: {
+  results: PlaceResult[],
+  onSave?: (r: PlaceResult) => void,
+  savedIds?: Set<string>,
+  isSavedTab?: boolean
 }) {
+  const [selectedPlace, setSelectedPlace] = useState<PlaceResult | null>(null);
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setSelectedPlace(null);
+    };
+    window.addEventListener("keydown", handleKey);
+    return () => window.removeEventListener("keydown", handleKey);
+  }, []);
+
+  useEffect(() => {
+    if (selectedPlace) {
+      document.body.style.overflow = "hidden";
+    } else {
+      document.body.style.overflow = "";
+    }
+    return () => { document.body.style.overflow = ""; };
+  }, [selectedPlace]);
+
   if (results.length === 0) {
     return (
       <div className="empty-state mt-16">
@@ -106,142 +140,169 @@ function ResultsTable({
     );
   }
 
+  const isSaved = (r: PlaceResult) => !isSavedTab && !!r.place_id && savedIds.has(r.place_id);
+
   return (
-    <div className="mt-12 w-full animate-fade-up">
-      <div className="flex items-center justify-between mb-4 px-2">
-        <span className="data-label">{results.length} spot{results.length !== 1 ? 's' : ''} detected</span>
-        {!isSavedTab && <div className="accent-rule" />}
-      </div>
-      
-      {/* Desktop Table */}
-      <div className="hidden overflow-x-auto md:block">
-        <table className="data-table">
-          <thead>
-            <tr>
-              <th>Establishment</th>
-              <th>Cuisine</th>
-              <th>Transit</th>
-              <th>Stats</th>
-              <th className="text-right">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {results.map((r, i) => {
-              const isAlreadySaved = !isSavedTab && r.place_id && savedIds.has(r.place_id);
-              return (
-                <tr key={i} className="hover-lift">
-                  <td>
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="font-display font-semibold text-ink">{r.name}</span>
-                        {!r.verified && (
-                          <div className="status-dot status-dot--unverified" title="Unverified name" />
-                        )}
-                        {r.verified && (
-                          <div className="status-dot status-dot--verified" title="Google Verified" />
-                        )}
-                      </div>
-                      <span className="mono-text clamp-1 max-w-xs">{r.address}</span>
-                    </div>
-                  </td>
-                  <td>
-                    <CuisineBadge cuisine={r.cuisine} />
-                  </td>
-                  <td>
-                    <MRTBadge station={r.nearest_mrt} />
-                  </td>
-                  <td>
-                    <div className="flex flex-col gap-1.5">
-                      <div className="flex items-center gap-2">
-                        <span className="font-mono text-xs font-bold text-ink" data-numeric>{r.rating || "—"}</span>
-                        {r.rating && (
-                          <div className="flex gap-0.5">
-                            {[1, 2, 3, 4, 5].map(star => (
-                              <Star key={star} className={`h-2.5 w-2.5 ${star <= Math.round(r.rating) ? 'fill-chili text-chili' : 'text-ink-200'}`} />
-                            ))}
-                          </div>
-                        )}
-                      </div>
-                      <PriceIndicator level={r.price_level} />
-                    </div>
-                  </td>
-                  <td className="text-right">
-                    <div className="flex justify-end gap-2">
-                      <button 
-                        onClick={() => window.open(getGoogleMapsUrl(r), '_blank')}
-                        className="btn btn-secondary btn-icon"
-                        title="View on Maps"
-                      >
-                        <ExternalLink className="h-4 w-4" />
-                      </button>
-                      {!isSavedTab && (
-                        <button 
-                          onClick={() => !isAlreadySaved && onSave?.(r)}
-                          disabled={!!isAlreadySaved}
-                          className={`btn btn-icon ${isAlreadySaved ? 'btn-ghost' : 'btn-primary'}`}
-                          title={isAlreadySaved ? "Already saved" : "Save location"}
-                        >
-                          {isAlreadySaved ? <Bookmark className="h-4 w-4" /> : <BookmarkPlus className="h-4 w-4" />}
-                        </button>
-                      )}
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
+    <>
+      <div className="mt-12 w-full">
+        <div className="animate-fade-up">
+          <div className="flex items-center justify-between mb-6 px-2">
+            <span className="data-label">{results.length} spot{results.length !== 1 ? 's' : ''} detected</span>
+            {!isSavedTab && <div className="accent-rule" />}
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {results.map((r, i) => (
+              <button
+                key={i}
+                onClick={() => setSelectedPlace(r)}
+                className="result-card hover-lift text-left w-full cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-chili transition-all"
+                aria-haspopup="dialog"
+                aria-label={`View details for ${r.name}`}
+              >
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <span className="font-display font-bold text-base leading-tight text-ink line-clamp-2">
+                    {r.name}
+                  </span>
+                  <div
+                    className={`status-dot flex-shrink-0 mt-1 ${r.verified ? 'status-dot--verified' : 'status-dot--unverified'}`}
+                    title={r.verified ? "Google Verified" : "Unverified"}
+                  />
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <CuisineBadge cuisine={r.cuisine} />
+                  <MRTBadge station={r.nearest_mrt} />
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
       </div>
 
-      {/* Mobile Cards */}
-      <div className="grid grid-cols-1 gap-4 md:hidden">
-        {results.map((r, i) => {
-          const isAlreadySaved = !isSavedTab && r.place_id && savedIds.has(r.place_id);
-          return (
-            <div key={i} className="result-card">
-              <div className="flex justify-between items-start">
-                <div className="flex flex-col gap-1">
-                  <span className="font-display text-lg font-bold leading-tight">{r.name}</span>
-                  <span className="mono-text text-xs leading-snug">{r.address}</span>
+      {selectedPlace && (() => {
+        const r = selectedPlace;
+        const saved = isSaved(r);
+        return (
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Details for ${r.name}`}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6"
+            onClick={() => setSelectedPlace(null)}
+          >
+            <div className="absolute inset-0 bg-ink/40 backdrop-blur-md animate-fade-in" />
+            <div
+              className="relative z-10 w-full max-w-lg modal-surface overflow-hidden animate-fade-up flex flex-col max-h-[90vh]"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-ink p-6 text-paper relative">
+                <button
+                  onClick={() => setSelectedPlace(null)}
+                  className="absolute top-4 right-4 text-ink-300 hover:text-paper transition-colors"
+                  aria-label="Close"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+                
+                <div className="flex items-center gap-3 mb-2">
+                  <h2 className="font-display font-bold text-2xl leading-tight text-paper uppercase tracking-tight">
+                    {r.name}
+                  </h2>
+                  <div
+                    className={`status-dot h-2.5 w-2.5 ${r.verified ? 'bg-success' : 'bg-ink-400'}`}
+                    title={r.verified ? "Verified via Google" : "Unverified"}
+                  />
                 </div>
+                <div className="flex items-center gap-2 opacity-80">
+                  <MapPin className="h-3.5 w-3.5" />
+                  <p className="mono-text text-xs text-paper font-medium">
+                    {r.address || "Location in Singapore"}
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex-1 overflow-y-auto p-6 space-y-8 bg-surface">
+                <div className="aspect-video bg-ink-50 border border-ink-200 flex items-center justify-center relative overflow-hidden group">
+                  <div className="absolute inset-0 opacity-[0.03] pointer-events-none" style={{ backgroundImage: 'radial-gradient(circle, #000 1px, transparent 1px)', backgroundSize: '16px 16px' }} />
+                  <div className="text-center z-10">
+                    <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-ink-100 text-ink-400 mb-2">
+                      <MapPin className="h-6 w-6" />
+                    </div>
+                    <p className="data-label text-[10px]">Geospatial coordinates verified</p>
+                    <p className="mono-text text-[10px] mt-1 opacity-50">{r.lat.toFixed(4)}, {r.lng.toFixed(4)}</p>
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-8">
+                  <div className="space-y-4">
+                    <div>
+                      <span className="data-label block mb-2">Cuisine Profile</span>
+                      <CuisineBadge cuisine={r.cuisine} />
+                    </div>
+                    <div>
+                      <span className="data-label block mb-2">Transit Access</span>
+                      <MRTBadge station={r.nearest_mrt} />
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <span className="data-label block mb-2">Taste Rating</span>
+                      <div className="flex items-baseline gap-2">
+                        <span className="font-display font-black text-3xl leading-none text-ink">{r.rating ?? "—"}</span>
+                        <div className="flex gap-0.5">
+                          {[1, 2, 3, 4, 5].map(star => (
+                            <Star
+                              key={star}
+                              className={`h-3 w-3 ${star <= Math.round(r.rating || 0) ? 'fill-chili text-chili' : 'text-ink-200'}`}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      {r.user_ratings_total && (
+                        <p className="mono-text text-[10px] mt-1 opacity-40 uppercase tracking-widest">Based on {r.user_ratings_total} reviews</p>
+                      )}
+                    </div>
+                    <div>
+                      <span className="data-label block mb-2">Budget Bracket</span>
+                      <div className="flex items-center gap-3">
+                        <PriceIndicator level={r.price_level} />
+                        <span className="mono-text text-xs text-ink-600 font-bold">
+                          {formatPricePax(r.price_level)}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="p-4 bg-ink-50 border-t border-ink-200 flex items-center justify-between gap-3">
+                <button
+                  onClick={() => window.open(getGoogleMapsUrl(r), '_blank')}
+                  className="btn btn-secondary flex-1"
+                >
+                  <ExternalLink className="h-4 w-4 mr-2" />
+                  Navigation
+                </button>
+
                 {!isSavedTab && (
-                  <button 
-                    onClick={() => !isAlreadySaved && onSave?.(r)}
-                    disabled={!!isAlreadySaved}
-                    className={`btn btn-icon btn-sm ${isAlreadySaved ? 'btn-ghost' : 'btn-primary'}`}
+                  <button
+                    onClick={() => { if (!saved) onSave?.(r); }}
+                    disabled={!!saved}
+                    className={`btn flex-1 ${saved ? 'btn-ghost' : 'btn-primary'}`}
                   >
-                    {isAlreadySaved ? <Bookmark className="h-4 w-4" /> : <BookmarkPlus className="h-4 w-4" />}
+                    {saved
+                      ? <><Bookmark className="h-4 w-4 mr-2" />Archived</>
+                      : <><BookmarkPlus className="h-4 w-4 mr-2" />Save Discovery</>
+                    }
                   </button>
                 )}
               </div>
-              
-              <hr />
-              
-              <div className="flex flex-wrap gap-2">
-                <CuisineBadge cuisine={r.cuisine} />
-                <MRTBadge station={r.nearest_mrt} />
-              </div>
-
-              <div className="flex items-center justify-between mt-1">
-                <div className="rating-bar w-24">
-                  <div className="rating-bar__track">
-                    <div className="rating-bar__fill" style={{ width: `${(r.rating || 0) * 20}%` }} />
-                  </div>
-                  <span className="font-mono text-2xs">{r.rating || "—"}</span>
-                </div>
-                <button 
-                  onClick={() => window.open(getGoogleMapsUrl(r), '_blank')}
-                  className="btn btn-secondary btn-sm"
-                >
-                  <MapPin className="h-3.5 w-3.5 mr-1" />
-                  Maps
-                </button>
-              </div>
             </div>
-          );
-        })}
-      </div>
-    </div>
+          </div>
+        );
+      })()}
+    </>
   );
 }
 
@@ -274,11 +335,11 @@ export default function App() {
 function FoodDiscoveryPage({ session }: { session: Session }) {
   const [activeTab, setActiveTab] = useState<"discover" | "saved">("discover");
   const [savedPlaces, setSavedPlaces] = useState<PlaceResult[] | null>(null);
-  const [input, setInput]         = useState("");
-  const [loading, setLoading]     = useState(false);
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
   const [loadingStep, setLoadingStep] = useState("");
-  const [results, setResults]     = useState<PlaceResult[] | null>(null);
-  const [error, setError]         = useState<string | null>(null);
+  const [results, setResults] = useState<PlaceResult[] | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   const isUrl = useMemo(() => isTikTokUrl(input), [input]);
 
@@ -309,7 +370,7 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
           "Authorization": `Bearer ${session.access_token}`,
         },
         body: JSON.stringify({ text: input }),
-        signal: controller.signal, 
+        signal: controller.signal,
       });
 
       setLoadingStep("Mapping MRT exits...");
@@ -342,7 +403,7 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
       .from('saved_places')
       .select('*')
       .order('created_at', { ascending: false });
-    
+
     if (error) {
       setSavedPlaces([]);
       return;
@@ -400,8 +461,7 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
           <em>TT</em>Foodie
         </div>
         <div className="flex items-center gap-4">
-
-          <button 
+          <button
             onClick={() => supabase.auth.signOut()}
             className="btn btn-ghost btn-sm"
           >
@@ -415,7 +475,6 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
         <div className="max-w-panel mx-auto">
           {/* Hero */}
           <div className="mb-12">
-
             <h1 className="mb-4">From Feed to <span className="underline-accent italic">Table</span>.</h1>
             <p className="max-w-prose">
               Paste a trending TikTok URL to extract hidden food gems, map them to SG's transit lines, and save your next meal.
@@ -434,7 +493,7 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
                   disabled={loading}
                 />
                 <Search className="absolute left-3 top-4 h-4 w-4 text-ink-300" />
-                
+
                 {input.trim() && (
                   <div className="absolute bottom-3 left-3 flex gap-2">
                     <span className={`badge ${isUrl ? 'badge-accent' : 'badge-neutral'}`}>
@@ -459,22 +518,20 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
             <div className="flex">
               <button
                 onClick={() => setActiveTab("discover")}
-                className={`px-6 py-3 font-display font-bold text-sm tracking-tight transition-all border-b-4 ${
-                  activeTab === "discover" ? "border-chili text-ink" : "border-transparent text-ink-400 hover:text-ink-600"
-                }`}
+                className={`px-6 py-3 font-display font-bold text-sm tracking-tight transition-all border-b-4 ${activeTab === "discover" ? "border-chili text-ink" : "border-transparent text-ink-400 hover:text-ink-600"
+                  }`}
               >
                 Inbound Feed
               </button>
               <button
                 onClick={() => setActiveTab("saved")}
-                className={`px-6 py-3 font-display font-bold text-sm tracking-tight transition-all border-b-4 ${
-                  activeTab === "saved" ? "border-chili text-ink" : "border-transparent text-ink-400 hover:text-ink-600"
-                }`}
+                className={`px-6 py-3 font-display font-bold text-sm tracking-tight transition-all border-b-4 ${activeTab === "saved" ? "border-chili text-ink" : "border-transparent text-ink-400 hover:text-ink-600"
+                  }`}
               >
                 Saved Library
               </button>
             </div>
-            
+
             {loading && (
               <div className="flex items-center gap-3 animate-fade-in">
                 <div className="status-dot status-dot--live" />
@@ -500,18 +557,18 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
                 {loading && !results && (
                   <div className="mt-12 space-y-6">
                     <div className="skeleton skeleton-heading w-1/3" />
-                    <div className="space-y-3">
-                      <div className="skeleton h-20 w-full" />
-                      <div className="skeleton h-20 w-full" />
-                      <div className="skeleton h-20 w-full" />
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                      <div className="skeleton h-24 w-full" />
+                      <div className="skeleton h-24 w-full" />
+                      <div className="skeleton h-24 w-full" />
                     </div>
                   </div>
                 )}
                 {!loading && results !== null && (
-                  <ResultsTable 
-                    results={results} 
-                    onSave={handleSavePlace} 
-                    savedIds={savedIds} 
+                  <ResultsTable
+                    results={results}
+                    onSave={handleSavePlace}
+                    savedIds={savedIds}
                   />
                 )}
               </>
@@ -519,9 +576,10 @@ function FoodDiscoveryPage({ session }: { session: Session }) {
               /* Saved Tab */
               <div className="w-full">
                 {!savedPlaces ? (
-                  <div className="mt-12 space-y-3">
-                    <div className="skeleton h-16 w-full" />
-                    <div className="skeleton h-16 w-full" />
+                  <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <div className="skeleton h-24 w-full" />
+                    <div className="skeleton h-24 w-full" />
+                    <div className="skeleton h-24 w-full" />
                   </div>
                 ) : savedPlaces.length === 0 ? (
                   <div className="empty-state mt-16">
